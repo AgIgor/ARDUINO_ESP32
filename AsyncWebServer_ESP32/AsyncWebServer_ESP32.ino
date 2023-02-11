@@ -57,6 +57,7 @@ void setup() {
     server.on("/temp", HTTP_GET, [](AsyncWebServerRequest *request){
       AsyncWebServerResponse *response = request->beginResponse(200, "text/json", getTemp());
       response->addHeader("Access-Control-Allow-Origin", "*");
+      response->addHeader("Access-Control-Allow-Methods", "GET");
       request->send(response);
     });
       

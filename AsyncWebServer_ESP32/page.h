@@ -14,10 +14,12 @@ R"=====(
     <h1 id="saida"></h1>
 </body>
 <script>
-    addEventListener('onload', getTemp())
+    addEventListener('DOMContentLoaded', () => {
+        getTemp()
+        console.log('ok')
+    })
 
     function getTemp() {
-        console.log('ok')
         fetch('http://192.168.15.10/temp')
             .then(response => {
                 response.json()
@@ -26,8 +28,9 @@ R"=====(
                         saida.innerText = data.sensor
                         document.querySelector('title').innerText = `Temp: ${data.sensor}`
                     })
+                    .catch(err => console.log(err))
             })
-            .catch(err => console.log(err))
+
     }
     setInterval(() => {
         getTemp()
