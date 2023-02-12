@@ -48,11 +48,9 @@ void setup() {
         Serial.printf("WiFi Failed!\n");
         return;
     }
-
     Serial.print("IP Address: ");
     Serial.println(WiFi.localIP());
 
-    
 
     server.on("/temp", HTTP_GET, [](AsyncWebServerRequest *request){
       AsyncWebServerResponse *response = request->beginResponse(200, "text/json", getTemp());
