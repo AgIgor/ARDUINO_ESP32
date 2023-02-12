@@ -7,13 +7,16 @@
 
 #define LED 2
 
-TinyGPS gps;
+IPAddress local_IP(192,168,15,175);
+IPAddress gateway(192,168,15,1);
+IPAddress subnet(255,255,255,0);
 
+TinyGPS gps;
 AsyncWebServer server(80);
 
+bool newData = false;
 const char* ssid = "VIVOFIBRA-9501";
 const char* password = "rgw7ucm3GT";
-
 const char* PARAM_MESSAGE = "message";
 
 void notFound(AsyncWebServerRequest *request) {
@@ -22,31 +25,40 @@ void notFound(AsyncWebServerRequest *request) {
 
 
 String getGPS(){
-  // digitalWrite(LED, !digitalRead(LED));
-  digitalWrite(LED,HIGH);
-  float flat, flon;
-  unsigned long age;
-  int ano;
-  byte mes, dia, hora, minuto, segundo;
-  gps.f_get_position(&flat, &flon, &age);
-  gps.crack_datetime(&ano,&mes, &dia, &hora, &minuto, &segundo);
-  
-  DynamicJsonDocument doc(1024);
-  doc["gps"]["lat"] = flat;
-  doc["gps"]["long"] = flon;
-  doc["sats"] = gps.satellites() == TinyGPS::GPS_INVALID_SATELLITES ? 0 : gps.satellites();
-  doc["speed"] = gps.f_speed_kmph();
-  doc["alt"] = gps.f_altitude();
-  doc["data"]["ano"] = ano;
-  doc["data"]["mes"] = mes;
-  doc["data"]["dia"] = dia;
-  doc["time"]["hora"] = hora;
-  doc["time"]["minuto"] = minuto;
-  doc["time"]["segundo"] = segundo;
-  
-  String output;
-  serializeJson(doc, output);
-  return output;
+  if(newData){
+    digitalWrite(LED,HIGH);
+    float flat, flon;
+    unsigned long age;
+    int ano;
+    byte mes, dia, hora, minuto, segundo;
+    gps.f_get_position(&flat, &flon, &age);
+    gps.crack_datetime(&ano,&mes, &dia, &hora, &minuto, &segundo);
+    
+    DynamicJsonDocument doc(1024);
+    doc["gps"]["lat"] = flat;
+    doc["gps"]["long"] = flon;
+    doc["sats"] = gps.satellites() == TinyGPS::GPS_INVALID_SATELLITES ? 0 : gps.satellites();
+    doc["speed"] = gps.f_speed_kmph();
+    doc["alt"] = gps.f_altitude();
+    doc["data"]["ano"] = ano;
+    doc["data"]["mes"] = mes;
+    doc["data"]["dia"] = dia;
+    doc["time"]["hora"] = hora;
+    doc["time"]["minuto"] = minuto;
+    doc["time"]["segundo"] = segundo;
+    
+    String output;
+    serializeJson(doc, output);
+    return output;
+
+  }else{
+    StaticJsonDocument<200> doc;
+    doc["GPS"] = "Sem Dados";
+    String output;
+    serializeJson(doc, output);
+    return output;
+    
+  }
     
 }//end get GPS
 
@@ -55,12 +67,16 @@ void setup(){
   pinMode(LED,OUTPUT);
   Serial.begin(115200);
   Serial2.begin(4800);
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, password);
-    if (WiFi.waitForConnectResult() != WL_CONNECTED) {
-        Serial.printf("WiFi Failed!\n");
-        return;
-    }
+  
+  if (!WiFi.config(local_IP, gateway, subnet)) {
+    Serial.println("STA Failed to configure");
+  }
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  if (WiFi.waitForConnectResult() != WL_CONNECTED) {
+      Serial.printf("WiFi Failed!\n");
+      return;
+  }
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
 
@@ -84,8 +100,7 @@ void setup(){
     
 }//end setup
 
-void loop(){
-  bool newData = false;
+void loop(){  
   unsigned long chars;
   unsigned short sentences, failed;
 
@@ -93,9 +108,12 @@ void loop(){
     while (Serial2.available()){
       char c = Serial2.read();
       // Serial.write(c); // uncomment this line if you want to see the GPS data flowing
-      gps.encode(c);
-      // if (gps.encode(c))
-      //   newData = true;
+      
+      if (gps.encode(c)){
+        newData = true;
+      }else{
+        newData = false;
+      }
     }//END WHILE
   }//END FOR
 
@@ -104,6 +122,5 @@ void loop(){
   // }//END IF NEW DATA
   
   gps.stats(&chars, &sentences, &failed);
-
-  if (chars == 0)Serial.println("Sem dados");
+  // if (chars == 0)Serial.println("Sem dados");
 }//end loop
