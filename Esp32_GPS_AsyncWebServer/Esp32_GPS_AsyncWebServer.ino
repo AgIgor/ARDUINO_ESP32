@@ -14,18 +14,17 @@ IPAddress subnet(255,255,255,0);
 TinyGPS gps;
 AsyncWebServer server(80);
 
-bool newData = false;
 const char* ssid = "VIVOFIBRA-9501";
 const char* password = "rgw7ucm3GT";
 const char* PARAM_MESSAGE = "message";
+bool newState;
 
 void notFound(AsyncWebServerRequest *request) {
     request->send(404, "text/plain", "Not found");
 }//end not found
 
-
 String getGPS(){
-  if(newData){
+  if(newState){
     digitalWrite(LED,HIGH);
     float flat, flon;
     unsigned long age;
@@ -57,11 +56,9 @@ String getGPS(){
     String output;
     serializeJson(doc, output);
     return output;
-    
   }
     
 }//end get GPS
-
 
 void setup(){
   pinMode(LED,OUTPUT);
@@ -108,19 +105,12 @@ void loop(){
     while (Serial2.available()){
       char c = Serial2.read();
       // Serial.write(c); // uncomment this line if you want to see the GPS data flowing
-      
-      if (gps.encode(c)){
-        newData = true;
-      }else{
-        newData = false;
-      }
+      if(gps.encode(c)) newState = true;
     }//END WHILE
   }//END FOR
-
-  // if (newData){
-  //   getGPS();
-  // }//END IF NEW DATA
-  
   gps.stats(&chars, &sentences, &failed);
-  // if (chars == 0)Serial.println("Sem dados");
+  if(chars == 0) newState = false;
+  Serial.println(chars);
+  // Serial.println(sentences);
+  // Serial.println(failed);
 }//end loop

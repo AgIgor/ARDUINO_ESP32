@@ -44,6 +44,25 @@ R"=====(
             justify-content: center;
         }
 
+        #log::-webkit-scrollbar {
+            display: none;
+        }
+
+        #log {
+            background-color: #3a3a3ad8;
+            width: 90%;
+            border-radius: 10px;
+            height: 500px;
+            padding: 10px;
+            margin-top: 30px;
+            box-shadow: #1b1530 0px 0px 30px 1px;
+            max-height: 600px;
+            max-width: 90%;
+            resize: none;
+            /* overflow-style: none; */
+            /* scrollbar-width: none; */
+        }
+
         #content {
             background-color: #7159c1cb;
             display: flex;
@@ -52,13 +71,14 @@ R"=====(
             flex-direction: column;
             width: 100%;
             height: 100%;
+            /* border: 1px solid red; */
         }
 
         footer {
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: #7159c1;
+            background-color: #1b1530;
             padding: 15px 30px;
             color: #fff;
             margin-top: auto;
@@ -75,7 +95,7 @@ R"=====(
 <body>
     <div id="container">
         <header>
-            <h1 id="sats">GPS</h1>
+            <h1 id="nsats">GPS</h1>
             <span id="loading">
                 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
                     style="margin: auto; background: none; display: block; shape-rendering: auto;" width="98px"
@@ -101,6 +121,7 @@ R"=====(
             <div id="content">
                 <h2 id="pos"></h2>
                 <h2 id="alt"></h2>
+                <textarea id="log"></textarea>
             </div>
         </main>
         <footer>
@@ -122,14 +143,36 @@ R"=====(
                 response.json()
                     .then(data => {
                         console.log(data)
+
                         if (data.GPS === 'Sem Dados') {
                             loading.setAttribute('hidden', 'true')
                         }
                         try {
-                            sats.innerText = `GPS: ${data.sats} Hora: ${data.time.hora}:${data.time.minuto}:${data.time.segundo}`
-                            pos.innerText = `Lat: ${data.gps.lat} Lon: ${data.gps.long}`
-                            alt.innerText = `Alt: ${data.alt} Vel: ${data.speed}`
+                            const hora = ((data.time.hora * 60 ** 3) - 648000) / 60 / 60 / 60
+                            const min = data.time.minuto
+                            const seg = data.time.segundo
+                            const sats = data.sats
+                            const lat = data.gps.lat
+                            const lon = data.gps.long
+                            const alt = data.alt
+                            const vel = data.speed
+
+                            nsats.innerText = `Sats: ${sats}`
+                            pos.innerText = `Lat: ${lat} Lon: ${lon}`
+                            alt.innerText = `Alt: ${alt} Vel: ${vel}`
+                            //mostra icone loading
                             loading.setAttribute('hidden', 'true')
+                            //text campo footer
+                            leg.innerText = `Hora: ${hora}:${min}:${seg}`
+                            //campo text log
+                            log.value += `Hora: ${hora}:${min}:${seg} GPS: ${sats}  Lat: ${lat} Lon: ${lon} Alt: ${alt} Vel: ${vel}\n`
+                            //auto rolagen
+                            log.scrollTop = log.scrollHeight
+
+                            const now = new Date().getTime()
+                            console.log(now)
+                            window.localStorage.setItem(now, JSON.stringify(data))
+
 
                         }
                         catch {
