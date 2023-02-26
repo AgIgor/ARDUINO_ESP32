@@ -4,6 +4,7 @@
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include "page.h"
+#include <ESPmDNS.h>
 
 #define LED 2
 
@@ -11,13 +12,13 @@ IPAddress local_IP(192,168,15,175);
 IPAddress gateway(192,168,15,1);
 IPAddress subnet(255,255,255,0);
 
-TinyGPS gps;
-AsyncWebServer server(80);
-
 const char* ssid = "VIVOFIBRA-9501";
 const char* password = "rgw7ucm3GT";
 const char* PARAM_MESSAGE = "message";
 bool newState;
+
+TinyGPS gps;
+AsyncWebServer server(80);
 
 void notFound(AsyncWebServerRequest *request) {
     request->send(404, "text/plain", "Not found");
@@ -65,9 +66,9 @@ void setup(){
   Serial.begin(115200);
   Serial2.begin(4800);
   
-  if (!WiFi.config(local_IP, gateway, subnet)) {
-    Serial.println("STA Failed to configure");
-  }
+  // if (!WiFi.config(local_IP, gateway, subnet)) {
+  //   Serial.println("STA Failed to configure");
+  // }
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   if (WiFi.waitForConnectResult() != WL_CONNECTED) {
@@ -77,7 +78,15 @@ void setup(){
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
 
-
+  if (!MDNS.begin("esp32")) {
+        Serial.println("Error setting up MDNS responder!");
+        while(1) {
+            delay(1000);
+        }
+    }    
+    MDNS.addService("http", "tcp", 80);
+    // Serial.println(MDNS.);
+    
   server.on("/gps", HTTP_GET, [](AsyncWebServerRequest *request){
       AsyncWebServerResponse *response = request->beginResponse(200, "text/json", getGPS());
       response->addHeader("Access-Control-Allow-Origin", "*");
@@ -87,17 +96,16 @@ void setup(){
     });
       
     
-    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-        request->send(200, "text/html", webpageCore);
-    });
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+      request->send(200, "text/html", webpageCore);
+  });
 
-
-    server.onNotFound(notFound);
-    server.begin();
+  server.onNotFound(notFound);
+  server.begin();
     
 }//end setup
 
-void loop(){  
+void loop(){
   unsigned long chars;
   unsigned short sentences, failed;
 
@@ -110,7 +118,7 @@ void loop(){
   }//END FOR
   gps.stats(&chars, &sentences, &failed);
   if(chars == 0) newState = false;
-  Serial.println(chars);
+  // Serial.println(chars);
   // Serial.println(sentences);
   // Serial.println(failed);
 }//end loop

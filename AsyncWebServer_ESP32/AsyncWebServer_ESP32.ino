@@ -12,6 +12,9 @@
 
 
 AsyncWebServer server(80);
+IPAddress local_IP(192,168,15,185);
+IPAddress gateway(192,168,15,1);
+IPAddress subnet(255,255,255,0);
 
 const char* ssid = "VIVOFIBRA-9501";
 const char* password = "rgw7ucm3GT";
@@ -42,6 +45,9 @@ String getTemp(){
 void setup() {
 
     Serial.begin(115200);
+    if (!WiFi.config(local_IP, gateway, subnet)) {
+    Serial.println("STA Failed to configure");
+  }
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
     if (WiFi.waitForConnectResult() != WL_CONNECTED) {

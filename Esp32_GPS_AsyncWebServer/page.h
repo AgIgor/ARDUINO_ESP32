@@ -138,7 +138,7 @@ R"=====(
     })
 
     function getTemp() {
-        fetch('http://192.168.15.175/gps')
+        fetch('http://esp32.local/gps')
             .then(response => {
                 response.json()
                     .then(data => {
