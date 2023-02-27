@@ -150,6 +150,7 @@ R"=====(
                 response.json()
                     .then(data => {
                         // console.log(data)
+
                         if (data.GPS === 'Sem Dados') {
                             loading.setAttribute('hidden', 'true')
                         }
