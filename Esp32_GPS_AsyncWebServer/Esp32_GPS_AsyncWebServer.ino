@@ -69,6 +69,7 @@ void setup(){
   // if (!WiFi.config(local_IP, gateway, subnet)) {
   //   Serial.println("STA Failed to configure");
   // }
+  
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   if (WiFi.waitForConnectResult() != WL_CONNECTED) {
