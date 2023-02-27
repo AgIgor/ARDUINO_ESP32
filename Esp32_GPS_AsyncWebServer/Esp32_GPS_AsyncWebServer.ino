@@ -85,7 +85,7 @@ void setup(){
             delay(1000);
         }
     }    
-    MDNS.addService("http", "tcp", 80);
+  MDNS.addService("http", "tcp", 80);
     
   server.on("/gps", HTTP_GET, [](AsyncWebServerRequest *request){
       AsyncWebServerResponse *response = request->beginResponse(200, "text/json", getGPS());
