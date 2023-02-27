@@ -48,6 +48,11 @@ R"=====(
             display: none;
         }
 
+        textarea {
+            disabled: true;
+            color: black;
+        }
+
         #log {
             background-color: #3a3a3ad8;
             width: 90%;
@@ -121,7 +126,9 @@ R"=====(
             <div id="content">
                 <h2 id="pos"></h2>
                 <h2 id="alt"></h2>
-                <textarea id="log"></textarea>
+                <textarea>
+                    <p id="log"></p>
+                </textarea>
             </div>
         </main>
         <footer>
@@ -138,19 +145,22 @@ R"=====(
     })
 
     function getTemp() {
-        fetch('http://esp32.local/gps')
+        fetch('http://192.168.15.175/gps')
             .then(response => {
                 response.json()
                     .then(data => {
-                        console.log(data)
+                        // console.log(data)
 
                         if (data.GPS === 'Sem Dados') {
                             loading.setAttribute('hidden', 'true')
                         }
                         try {
-                            const hora = ((data.time.hora * 60 ** 3) - 648000) / 60 / 60 / 60
-                            const min = data.time.minuto
-                            const seg = data.time.segundo
+                            const now = new Date().getTime()
+                            //     const hora = data.time.hora
+                            //     const min = data.time.minuto
+                            //     const seg = data.time.segundo
+                            const hora = now.toLocaleTimeString()
+                            const dia = now.toLocaleDataString()
                             const sats = data.sats
                             const lat = data.gps.lat
                             const lon = data.gps.long
@@ -163,14 +173,13 @@ R"=====(
                             //mostra icone loading
                             loading.setAttribute('hidden', 'true')
                             //text campo footer
-                            leg.innerText = `Hora: ${hora}:${min}:${seg}`
+                            leg.innerText = `Hora: ${hora} Data: ${dia}`
                             //campo text log
-                            log.value += `Hora: ${hora}:${min}:${seg} GPS: ${sats}  Lat: ${lat} Lon: ${lon} Alt: ${alt} Vel: ${vel}\n`
+                            log.value += `Hora: ${hora} Data: ${dia} GPS: ${sats}  Lat: ${lat} Lon: ${lon} Alt: ${alt} Vel: ${vel}`
                             //auto rolagen
                             log.scrollTop = log.scrollHeight
 
-                            const now = new Date().getTime()
-                            console.log(now)
+                            // console.log(now)
                             window.localStorage.setItem(now, JSON.stringify(data))
 
 

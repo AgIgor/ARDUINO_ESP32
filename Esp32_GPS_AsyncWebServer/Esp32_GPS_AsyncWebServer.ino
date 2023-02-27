@@ -85,7 +85,6 @@ void setup(){
         }
     }    
     MDNS.addService("http", "tcp", 80);
-    // Serial.println(MDNS.);
     
   server.on("/gps", HTTP_GET, [](AsyncWebServerRequest *request){
       AsyncWebServerResponse *response = request->beginResponse(200, "text/json", getGPS());
@@ -112,13 +111,16 @@ void loop(){
   for (unsigned long start = millis(); millis() - start < 500;){
     while (Serial2.available()){
       char c = Serial2.read();
-      // Serial.write(c); // uncomment this line if you want to see the GPS data flowing
+      Serial.print(c);
       if(gps.encode(c)) newState = true;
     }//END WHILE
   }//END FOR
   gps.stats(&chars, &sentences, &failed);
   if(chars == 0) newState = false;
-  // Serial.println(chars);
-  // Serial.println(sentences);
-  // Serial.println(failed);
+  Serial.println();
+  Serial.println(chars);
+  Serial.println(sentences);
+  Serial.println(failed);
+  Serial.println();
+
 }//end loop
