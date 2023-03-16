@@ -1,3 +1,6 @@
+#include <PWM.h>
+int32_t frequency = 10000; //frequency (in Hz)
+
 #define hall_pin A2
 #define leituras 100
 #define pinPWM 9
@@ -14,7 +17,7 @@ float I = 0;
 #define ki 1.2 //0.2
 #define kd 1.1 //0.1
 
-double setpoint = 1.0;   // Valor de corrente desejado (em Ampères)
+double setpoint = 0.5;   // Valor de corrente desejado (em Ampères)
 
 double output = 0.0;     // Valor de saída do controlador (em PWM)
 double error = 0.0;      // Erro entre o setpoint e o input
@@ -29,6 +32,13 @@ long delayMillis;
 #define DELAYPRINT 100
 
 void setup() {
+  InitTimersSafe(); 
+  bool success = SetPinFrequencySafe(pinPWM, frequency);
+  if(!success){
+    while(1){
+      
+    }    
+  }
   Serial.begin(115200);
   pinMode(hall_pin, INPUT);
   pinMode(LED_BUILTIN, OUTPUT);
@@ -72,7 +82,7 @@ void loop() {
     output = output_min;
   }
   
-  analogWrite(pinPWM, output);
+  pwmWrite(pinPWM, output);
   last_error = error;
 
   if(millis() - delayMillis >= DELAYPRINT){
