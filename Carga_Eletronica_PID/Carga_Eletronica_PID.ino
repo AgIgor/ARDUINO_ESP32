@@ -14,7 +14,7 @@ float I = 0;
 #define ki 1.2 //0.2
 #define kd 1.1 //0.1
 
-double setpoint = 0.5;   // Valor de corrente desejado (em Ampères)
+double setpoint = 1.0;   // Valor de corrente desejado (em Ampères)
 
 double output = 0.0;     // Valor de saída do controlador (em PWM)
 double error = 0.0;      // Erro entre o setpoint e o input
@@ -24,6 +24,9 @@ double derivative = 0.0; // Derivada do erro
 
 double output_min = 0.0;
 double output_max = 255.0;
+
+long delayMillis;
+#define DELAYPRINT 100
 
 void setup() {
   Serial.begin(115200);
@@ -51,47 +54,37 @@ void loop() {
   
   error = setpoint - media;
   integral = integral + error;
-  // Limitação da integral do erro
-  if (integral > output_max / ki) {
+  
+  if (integral > output_max / ki) {// Limitação da integral do erro
     integral = output_max / ki;
   }
   else if (integral < output_min / ki) {
     integral = output_min / ki;
   }
   
-  // Cálculo da derivada do erro
-  derivative = error - last_error;
+  derivative = error - last_error;// Cálculo da derivada do erro
+  output = kp * error + ki * integral + kd * derivative;// Cálculo da saída do controlador
   
-  // Cálculo da saída do controlador
-  output = kp * error + ki * integral + kd * derivative;
-  
-  // Limitação da saída do controlador
-  if (output > output_max) {
+  if (output > output_max) {// Limitação da saída do controlador
     output = output_max;
   }
   else if (output < output_min) {
     output = output_min;
   }
   
-  // Escreve o valor da saída no pino PWM
   analogWrite(pinPWM, output);
-  
-  // Atualiza o valor do último erro
   last_error = error;
 
-  // if(Iset < media){
-  //   analogWrite(pinPWM, 0);
-  // }else{
-  //   analogWrite(pinPWM, 255);
-  // }
+  if(millis() - delayMillis >= DELAYPRINT){
+    delayMillis = millis();
+    Serial.print("I = ");
+    Serial.print(media);
 
-  Serial.print("I = ");
-  Serial.print(media);
+    // Serial.print(" error = ");
+    // Serial.print(error);
 
-  // Serial.print(" error = ");
-  // Serial.print(error);
-
-  Serial.print(" out = ");
-  Serial.println(output);
-  delay(10);
+    Serial.print(" out = ");
+    Serial.println(output);
+  }
+  delay(1);
 }
