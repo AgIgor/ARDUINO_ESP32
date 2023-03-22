@@ -66,9 +66,9 @@ void setup(){
   Serial.begin(115200);
   Serial2.begin(4800);
   
-  // if (!WiFi.config(local_IP, gateway, subnet)) {
-  //   Serial.println("STA Failed to configure");
-  // }
+  if (!WiFi.config(local_IP, gateway, subnet)) {
+    Serial.println("STA Failed to configure");
+  }
   
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
@@ -112,16 +112,16 @@ void loop(){
   for (unsigned long start = millis(); millis() - start < 500;){
     while (Serial2.available()){
       char c = Serial2.read();
-      Serial.print(c);
+      // Serial.print(c);
       if(gps.encode(c)) newState = true;
     }//END WHILE
   }//END FOR
   gps.stats(&chars, &sentences, &failed);
   if(chars == 0) newState = false;
-  Serial.println();
-  Serial.println(chars);
-  Serial.println(sentences);
-  Serial.println(failed);
-  Serial.println();
+  // Serial.println();
+  // Serial.println(chars);
+  // Serial.println(sentences);
+  // Serial.println(failed);
+  // Serial.println();
 
 }//end loop
