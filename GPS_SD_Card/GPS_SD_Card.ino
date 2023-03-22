@@ -6,8 +6,6 @@
 
 #define LED 2
 bool newState;
-float OLD_LAT, OLD_LONG;
-
 
 TinyGPS gps;
 
@@ -168,41 +166,40 @@ void testFileIO(fs::FS &fs, const char * path){
     file.close();
 }
 
-String getGPS(){
-  if(newState){
-    digitalWrite(LED, HIGH);
-    float flat, flon;
-    unsigned long age;
-    int ano;
-    byte mes, dia, hora, minuto, segundo;
-    gps.f_get_position(&flat, &flon, &age);
-    gps.crack_datetime(&ano,&mes, &dia, &hora, &minuto, &segundo);
-    
-    DynamicJsonDocument doc(1024);
-    doc["gps"]["lat"] = flat;
-    doc["gps"]["long"] = flon;
-    doc["sats"] = gps.satellites() == TinyGPS::GPS_INVALID_SATELLITES ? 0 : gps.satellites();
-    doc["speed"] = gps.f_speed_kmph();
-    doc["alt"] = gps.f_altitude();
-    doc["data"]["ano"] = ano;
-    doc["data"]["mes"] = mes;
-    doc["data"]["dia"] = dia;
-    doc["time"]["hora"] = hora;
-    doc["time"]["minuto"] = minuto;
-    doc["time"]["segundo"] = segundo;
-    
-    String output;
-    serializeJson(doc, output);
-    return output;
+void getGPS(){
+  digitalWrite(LED, HIGH);
+  float flat, flon;
+  unsigned long age;
+  int ano;
+  byte mes, dia, hora, minuto, segundo;
+  gps.f_get_position(&flat, &flon, &age);
+  gps.crack_datetime(&ano,&mes, &dia, &hora, &minuto, &segundo);
 
-  }else{
-    StaticJsonDocument<200> doc;
-    doc["GPS"] = "Sem Dados";
-    String output;
-    serializeJson(doc, output);
-    return output;
+  static float OLD_LAT, OLD_LONG;
+  double distancia = TinyGPS::distance_between(OLD_LAT, OLD_LONG, flat, flon);
+  
+  DynamicJsonDocument doc(1024);
+  doc["gps"]["lat"] = flat;
+  doc["gps"]["long"] = flon;
+  doc["sats"] = gps.satellites() == TinyGPS::GPS_INVALID_SATELLITES ? 0 : gps.satellites();
+  doc["speed"] = gps.f_speed_kmph();
+  doc["alt"] = gps.f_altitude();
+  doc["data"]["ano"] = ano;
+  doc["data"]["mes"] = mes;
+  doc["data"]["dia"] = dia;
+  doc["time"]["hora"] = hora;
+  doc["time"]["minuto"] = minuto;
+  doc["time"]["segundo"] = segundo;
+  
+  String output;
+  serializeJson(doc, output);
+  
+  if(distancia >= 50){
+    OLD_LAT = flat;
+    OLD_LONG = flon;
+    appendFile(SD, "/data.json", output + ",\n");
+    Serial.println(output);
   }
-    
 }//end get GPS
 
 void setup(){
@@ -267,17 +264,9 @@ void loop(){
   if(chars == 0) newState = false;
 
   if(newState){ 
-    String data = getGPS();
-    Serial.println(data);
+    getGPS();
     digitalWrite(LED, LOW);
-    //appendFile(SD, "/data.json", data + ",");
   }
-
-  // double distancia = TinyGPS::distance_between(OLD_LAT, OLD_LONG, flat, flon);
-  // if(distancia >= 50){
-  //   Serial.print("Distancia: ");
-  //   Serial.println(distancia);
-  // }
 
   // Serial.println();
   // Serial.println(chars);
