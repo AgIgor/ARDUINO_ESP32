@@ -4,7 +4,16 @@
 #include "SD.h"
 #include "SPI.h"
 
+#define PMTK_SET_NMEA_UPDATE_1HZ  "$PMTK220,1000*1F"
+#define PMTK_SET_NMEA_UPDATE_5HZ  "$PMTK220,200*2C"
+#define PMTK_SET_NMEA_UPDATE_10HZ "$PMTK220,100*2F"
+
+#define PMTK_SET_NMEA_OUTPUT_RMCONLY "$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29"
+// turn on ALL THE DATA
+#define PMTK_SET_NMEA_OUTPUT_ALLDATA "$PMTK314,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0*28"
+
 #define LED 2
+#define DISTANCE 50 //50
 bool newState;
 
 TinyGPS gps;
@@ -193,19 +202,37 @@ void getGPS(){
   
   String output;
   serializeJson(doc, output);
+  //Serial.println(output);
+
   
-  if(distancia >= 50){
+  if(distancia >= DISTANCE){
     OLD_LAT = flat;
     OLD_LONG = flon;
     appendFile(SD, "/data.json", output + ",\n");
-    Serial.println(output);
+    Serial.println(distancia);
   }
 }//end get GPS
 
 void setup(){
     Serial.begin(115200);
     Serial2.begin(4800);
+    
+  // uncomment this line to turn on only the "minimum recommended" data for high update rates!
+   Serial2.println(PMTK_SET_NMEA_OUTPUT_RMCONLY);
+
+  // uncomment this line to turn on all the available data - for 9600 baud you'll want 1 Hz rate
+  // Serial2.println(PMTK_SET_NMEA_OUTPUT_ALLDATA);
+  
+  // Set the update rate
+  // 1 Hz update rate
+  Serial2.println(PMTK_SET_NMEA_UPDATE_1HZ);
+  // 5 Hz update rate- for 9600 baud you'll have to set the output to RMC only (see above)
+  //Serial2.println(PMTK_SET_NMEA_UPDATE_5HZ);
+  // 10 Hz update rate - for 9600 baud you'll have to set the output to RMC only (see above)
+  //  Serial2.println(PMTK_SET_NMEA_UPDATE_10HZ);
+  
     pinMode(LED, OUTPUT);
+    digitalWrite(LED, HIGH);
 
     if(!SD.begin()){
         Serial.println("Card Mount Failed");
@@ -246,20 +273,24 @@ void setup(){
     // testFileIO(SD, "/test.txt");
     Serial.printf("Total space: %lluMB\n", SD.totalBytes() / (1024 * 1024));
     Serial.printf("Used space: %lluMB\n", SD.usedBytes() / (1024 * 1024));
-}
+}//end setup
 
 void loop(){
   unsigned long chars;
   unsigned short sentences, failed;
 
-  for (unsigned long start = millis(); millis() - start < 500;){
+  for (unsigned long start = millis(); millis() - start < 100;){
     while (Serial2.available()){
       char c = Serial2.read();
       // Serial.print(c);
-      // digitalWrite(LED, HIGH);
-      if(gps.encode(c)) newState = true;
+      if(gps.encode(c)){
+        newState = true;
+      }else{
+        Serial.print(c);
+      }
     }//END WHILE
   }//END FOR
+  
   gps.stats(&chars, &sentences, &failed);
   if(chars == 0) newState = false;
 

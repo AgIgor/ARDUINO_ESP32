@@ -1,12 +1,12 @@
 #include <Arduino.h>
 #include <RotaryEncoder.h>
 
-#define PIN_IN1 18
-#define PIN_IN2 19
+#define PIN_IN1 2
+#define PIN_IN2 3
 
 #define ROTARYSTEPS 1
 #define ROTARYMIN 0
-#define ROTARYMAX 9
+#define ROTARYMAX 999
 
 RotaryEncoder encoder(PIN_IN1, PIN_IN2, RotaryEncoder::LatchMode::FOUR0);
 int lastPos = -1;
