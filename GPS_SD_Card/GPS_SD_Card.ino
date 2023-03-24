@@ -3,6 +3,17 @@
 #include "FS.h"
 #include "SD.h"
 #include "SPI.h"
+#include "BluetoothSerial.h"
+
+#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+#endif
+
+#if !defined(CONFIG_BT_SPP_ENABLED)
+#error Serial Bluetooth not available or not enabled. It is only available for the ESP32 chip.
+#endif
+
+BluetoothSerial SerialBT;
 
 #define PMTK_SET_NMEA_UPDATE_1HZ  "$PMTK220,1000*1F"
 #define PMTK_SET_NMEA_UPDATE_5HZ  "$PMTK220,200*2C"
@@ -13,123 +24,123 @@
 #define PMTK_SET_NMEA_OUTPUT_ALLDATA "$PMTK314,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0*28"
 
 #define LED 2
-#define DISTANCE 50 //50
+#define DISTANCE 5 //50
 bool newState;
 
 TinyGPS gps;
 
 void listDir(fs::FS &fs, const char * dirname, uint8_t levels){
-    Serial.printf("Listing directory: %s\n", dirname);
+    SerialBT.printf("Listing directory: %s\n", dirname);
 
     File root = fs.open(dirname);
     if(!root){
-        Serial.println("Failed to open directory");
+        SerialBT.println("Failed to open directory");
         return;
     }
     if(!root.isDirectory()){
-        Serial.println("Not a directory");
+        SerialBT.println("Not a directory");
         return;
     }
 
     File file = root.openNextFile();
     while(file){
         if(file.isDirectory()){
-            Serial.print("  DIR : ");
-            Serial.println(file.name());
+            SerialBT.print("  DIR : ");
+            SerialBT.println(file.name());
             if(levels){
                 listDir(fs, file.path(), levels -1);
             }
         } else {
-            Serial.print("  FILE: ");
-            Serial.print(file.name());
-            Serial.print("  SIZE: ");
-            Serial.println(file.size());
+            SerialBT.print("  FILE: ");
+            SerialBT.print(file.name());
+            SerialBT.print("  SIZE: ");
+            SerialBT.println(file.size());
         }
         file = root.openNextFile();
     }
 }
 
 void createDir(fs::FS &fs, const char * path){
-    Serial.printf("Creating Dir: %s\n", path);
+    SerialBT.printf("Creating Dir: %s\n", path);
     if(fs.mkdir(path)){
-        Serial.println("Dir created");
+        SerialBT.println("Dir created");
     } else {
-        Serial.println("mkdir failed");
+        SerialBT.println("mkdir failed");
     }
 }
 
 void removeDir(fs::FS &fs, const char * path){
-    Serial.printf("Removing Dir: %s\n", path);
+    SerialBT.printf("Removing Dir: %s\n", path);
     if(fs.rmdir(path)){
-        Serial.println("Dir removed");
+        SerialBT.println("Dir removed");
     } else {
-        Serial.println("rmdir failed");
+        SerialBT.println("rmdir failed");
     }
 }
 
 void readFile(fs::FS &fs, const char * path){
-    Serial.printf("Reading file: %s\n", path);
+    SerialBT.printf("Reading file: %s\n", path);
 
     File file = fs.open(path);
     if(!file){
-        Serial.println("Failed to open file for reading");
+        SerialBT.println("Failed to open file for reading");
         return;
     }
 
-    Serial.print("Read from file: ");
+    SerialBT.print("Read from file: ");
     while(file.available()){
-        Serial.write(file.read());
+        SerialBT.write(file.read());
     }
     file.close();
 }
 
 void writeFile(fs::FS &fs, const char * path, const char * message){
-    Serial.printf("Writing file: %s\n", path);
+    SerialBT.printf("Writing file: %s\n", path);
 
     File file = fs.open(path, FILE_WRITE);
     if(!file){
-        Serial.println("Failed to open file for writing");
+        SerialBT.println("Failed to open file for writing");
         return;
     }
     if(file.print(message)){
-        Serial.println("File written");
+        SerialBT.println("File written");
     } else {
-        Serial.println("Write failed");
+        SerialBT.println("Write failed");
     }
     file.close();
 }
 
 void appendFile(fs::FS &fs, const char * path, const String message){
-    Serial.printf("Appending to file: %s\n", path);
+    SerialBT.printf("Appending to file: %s\n", path);
 
     File file = fs.open(path, FILE_APPEND);
     if(!file){
-        Serial.println("Failed to open file for appending");
+        SerialBT.println("Failed to open file for appending");
         return;
     }
     if(file.print(message)){
-        Serial.println("Message appended");
+        SerialBT.println("Message appended");
     } else {
-        Serial.println("Append failed");
+        SerialBT.println("Append failed");
     }
     file.close();
 }
 
 void renameFile(fs::FS &fs, const char * path1, const char * path2){
-    Serial.printf("Renaming file %s to %s\n", path1, path2);
+    SerialBT.printf("Renaming file %s to %s\n", path1, path2);
     if (fs.rename(path1, path2)) {
-        Serial.println("File renamed");
+        SerialBT.println("File renamed");
     } else {
-        Serial.println("Rename failed");
+        SerialBT.println("Rename failed");
     }
 }
 
 void deleteFile(fs::FS &fs, const char * path){
-    Serial.printf("Deleting file: %s\n", path);
+    SerialBT.printf("Deleting file: %s\n", path);
     if(fs.remove(path)){
-        Serial.println("File deleted");
+        SerialBT.println("File deleted");
     } else {
-        Serial.println("Delete failed");
+        SerialBT.println("Delete failed");
     }
 }
 
@@ -152,16 +163,16 @@ void testFileIO(fs::FS &fs, const char * path){
             len -= toRead;
         }
         end = millis() - start;
-        Serial.printf("%u bytes read for %u ms\n", flen, end);
+        SerialBT.printf("%u bytes read for %u ms\n", flen, end);
         file.close();
     } else {
-        Serial.println("Failed to open file for reading");
+        SerialBT.println("Failed to open file for reading");
     }
 
 
     file = fs.open(path, FILE_WRITE);
     if(!file){
-        Serial.println("Failed to open file for writing");
+        SerialBT.println("Failed to open file for writing");
         return;
     }
 
@@ -171,7 +182,7 @@ void testFileIO(fs::FS &fs, const char * path){
         file.write(buf, 512);
     }
     end = millis() - start;
-    Serial.printf("%u bytes written for %u ms\n", 2048 * 512, end);
+    SerialBT.printf("%u bytes written for %u ms\n", 2048 * 512, end);
     file.close();
 }
 
@@ -202,20 +213,21 @@ void getGPS(){
   
   String output;
   serializeJson(doc, output);
-  //Serial.println(output);
-
   
   if(distancia >= DISTANCE){
     OLD_LAT = flat;
     OLD_LONG = flon;
-    appendFile(SD, "/data.json", output + ",\n");
-    Serial.println(distancia);
+    appendFile(SD, "/newData.json", output + ",\n");
+    //SerialBT.println(distancia);
+    SerialBT.println(output);
+
   }
 }//end get GPS
 
 void setup(){
-    Serial.begin(115200);
+    //Serial.begin(115200);
     Serial2.begin(4800);
+    SerialBT.begin("ESP32");
     
   // uncomment this line to turn on only the "minimum recommended" data for high update rates!
    Serial2.println(PMTK_SET_NMEA_OUTPUT_RMCONLY);
@@ -233,31 +245,34 @@ void setup(){
   
     pinMode(LED, OUTPUT);
     digitalWrite(LED, HIGH);
+    delay(500);
 
     if(!SD.begin()){
-        Serial.println("Card Mount Failed");
+        SerialBT.println("Card Mount Failed");
+        SerialBT.println("Card Mount Failed");
         return;
     }
     uint8_t cardType = SD.cardType();
 
     if(cardType == CARD_NONE){
-        Serial.println("No SD card attached");
+        SerialBT.println("No SD card attached");
+        SerialBT.println("No SD card attached");
         return;
     }
 
-    Serial.print("SD Card Type: ");
+    SerialBT.print("SD Card Type: ");
     if(cardType == CARD_MMC){
-        Serial.println("MMC");
+        SerialBT.println("MMC");
     } else if(cardType == CARD_SD){
-        Serial.println("SDSC");
+        SerialBT.println("SDSC");
     } else if(cardType == CARD_SDHC){
-        Serial.println("SDHC");
+        SerialBT.println("SDHC");
     } else {
-        Serial.println("UNKNOWN");
+        SerialBT.println("UNKNOWN");
     }
 
     uint64_t cardSize = SD.cardSize() / (1024 * 1024);
-    Serial.printf("SD Card Size: %lluMB\n", cardSize);
+    SerialBT.printf("SD Card Size: %lluMB\n", cardSize);
 
     listDir(SD, "/", 0);
     // createDir(SD, "/mydir");
@@ -271,8 +286,8 @@ void setup(){
     // renameFile(SD, "/hello.txt", "/foo.txt");
     // readFile(SD, "/foo.txt");
     // testFileIO(SD, "/test.txt");
-    Serial.printf("Total space: %lluMB\n", SD.totalBytes() / (1024 * 1024));
-    Serial.printf("Used space: %lluMB\n", SD.usedBytes() / (1024 * 1024));
+    SerialBT.printf("Total space: %lluMB\n", SD.totalBytes() / (1024 * 1024));
+    SerialBT.printf("Used space: %lluMB\n", SD.usedBytes() / (1024 * 1024));
 }//end setup
 
 void loop(){
@@ -282,12 +297,11 @@ void loop(){
   for (unsigned long start = millis(); millis() - start < 100;){
     while (Serial2.available()){
       char c = Serial2.read();
-      // Serial.print(c);
-      if(gps.encode(c)){
-        newState = true;
-      }else{
-        Serial.print(c);
-      }
+      // SerialBT.print(c);
+      
+      if(gps.encode(c)) newState = true;      
+      if(!newState) SerialBT.print(c);
+      
     }//END WHILE
   }//END FOR
   
@@ -299,11 +313,11 @@ void loop(){
     digitalWrite(LED, LOW);
   }
 
-  // Serial.println();
-  // Serial.println(chars);
-  // Serial.println(sentences);
-  // Serial.println(failed);
-  // Serial.println();
+  // SerialBT.println();
+  // SerialBT.println(chars);
+  // SerialBT.println(sentences);
+  // SerialBT.println(failed);
+  // SerialBT.println();
 
 
 }//end loop
